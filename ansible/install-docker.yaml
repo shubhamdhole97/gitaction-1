@@ -1,13 +1,10 @@
 ---
 - name: Install Docker on GCP VM
   hosts: all
-  become: yes
-  tasks:
-    - name: Update apt
-      apt:
-        update_cache: yes
+  become: true
 
-    - name: Install required packages
+  tasks:
+    - name: Install Docker dependencies
       apt:
         name: "{{ item }}"
         state: present
@@ -16,26 +13,25 @@
         - ca-certificates
         - curl
         - software-properties-common
-        - gnupg
 
     - name: Add Docker GPG key
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
 
-    - name: Add Docker repository
+    - name: Add Docker APT repo
       apt_repository:
         repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
         state: present
 
-    - name: Install Docker
+    - name: Install Docker CE
       apt:
         name: docker-ce
         state: latest
-        update_cache: yes
+        update_cache: true
 
-    - name: Start and enable Docker
+    - name: Start Docker service
       systemd:
         name: docker
-        enabled: yes
+        enabled: true
         state: started
