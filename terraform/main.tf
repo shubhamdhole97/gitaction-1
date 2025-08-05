@@ -8,9 +8,9 @@ terraform {
 }
 
 provider "google" {
-  project     = "crypto-lodge-466511-s8"
-  region      = "us-central1"
-  zone        = "us-central1-a"
+  project = "crypto-lodge-466511-s8"
+  region  = "us-central1"
+  zone    = "us-central1-a"
 }
 
 resource "google_compute_instance" "vm_instance" {
@@ -29,5 +29,16 @@ resource "google_compute_instance" "vm_instance" {
     access_config {}
   }
 
-  tags = ["http-server", "https-server"]
+  metadata = {
+    ssh-keys = <<EOT
+ubuntu:${var.ssh_public_key}
+shoeb:${var.ssh_public_key}
+EOT
+  }
+
+  tags = ["ssh"]
+}
+
+output "instance_ip" {
+  value = google_compute_instance.vm_instance.network_interface[0].access_config[0].nat_ip
 }
