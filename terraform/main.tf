@@ -1,6 +1,3 @@
-variable "ssh_user" {}
-variable "ssh_pub_key" {}
-
 terraform {
   required_providers {
     google = {
@@ -11,19 +8,20 @@ terraform {
 }
 
 provider "google" {
-  project     = "crypto-lodge-466511-s8"
-  region      = "us-central1"
-  zone        = "us-central1-a"
+  credentials = file(var.gcp_credentials_file)
+  project     = local.credentials.project_id
+  region      = var.region
+  zone        = var.zone
+}
+
+locals {
+  credentials = jsondecode(file(var.gcp_credentials_file))
 }
 
 resource "google_compute_instance" "vm_instance" {
   name         = "small-vm"
-  machine_type = "e2-small"
-  zone         = "us-central1-a"
-
-  lifecycle {
-    create_before_destroy = true
-  }
+  machine_type = "e2-medium"
+  zone         = var.zone
 
   boot_disk {
     initialize_params {
@@ -32,15 +30,21 @@ resource "google_compute_instance" "vm_instance" {
   }
 
   network_interface {
-    network = "default"
+    network       = "default"
     access_config {}
   }
 
   metadata = {
-    ssh-keys = "${var.ssh_user}:${var.ssh_pub_key}"
+    ssh-keys = <<EOT
+ubuntu:${file(var.ssh_pub_key_path)}
+EOT
   }
 
-  tags = ["http-server", "https-server", "ssh"]
+  tags = ["ssh"]
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 output "vm_ip" {
