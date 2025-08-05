@@ -8,15 +8,15 @@ terraform {
 }
 
 provider "google" {
-   project     = var.project_id
-  region      = var.region
-  zone        = var.zone
+  project     = "crypto-lodge-466511-s8"
+  region      = "us-central1"
+  zone        = "us-central1-a"
 }
 
 resource "google_compute_instance" "vm_instance" {
   name         = "small-vm"
   machine_type = "e2-small"
-  zone         = var.zone
+  zone         = "us-central1-a"
 
   boot_disk {
     initialize_params {
