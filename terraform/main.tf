@@ -43,6 +43,20 @@ resource "google_compute_instance" "vm_instance" {
   tags = ["http-server", "https-server", "ssh"]
 }
 
+resource "google_compute_firewall" "allow-ssh" {
+  name    = "allow-ssh"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+
+  target_tags = ["ssh"]
+}
+
 output "vm_ip" {
   value = google_compute_instance.vm_instance.network_interface[0].access_config[0].nat_ip
 }

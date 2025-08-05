@@ -41,18 +41,17 @@ jobs:
       run: terraform apply -auto-approve -var="ssh_user=${{ secrets.SSH_USER }}" -var="ssh_pub_key=${{ secrets.SSH_PUBLIC_KEY }}"
 
     - name: 🖥️ Get VM IP
-      id: ip
+      id: get_ip
       run: echo "VM_IP=$(terraform output -raw vm_ip)" >> $GITHUB_ENV
 
     - name: 🧾 Write Ansible Inventory
       run: |
         mkdir -p ansible
         echo "[all]" > ansible/inventory.ini
-        echo "vm ansible_host=$VM_IP ansible_user=${{ secrets.SSH_USER }} ansible_ssh_private_key_file=~/.ssh/id_rsa" >> ansible/inventory.ini
+        echo "vm ansible_host=${{ env.VM_IP }} ansible_user=${{ secrets.SSH_USER }} ansible_ssh_private_key_file=~/.ssh/id_rsa" >> ansible/inventory.ini
 
     - name: 🔐 Add VM to known_hosts
-      run: |
-        ssh-keyscan -H $VM_IP >> ~/.ssh/known_hosts
+      run: ssh-keyscan -H ${{ env.VM_IP }} >> ~/.ssh/known_hosts
 
     - name: 🐍 Install Ansible
       run: sudo apt update && sudo apt install -y ansible
