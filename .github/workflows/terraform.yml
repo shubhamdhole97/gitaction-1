@@ -10,7 +10,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: terraform
+        working-directory: terraform   # 👈 Set this to your folder containing main.tf
 
     steps:
     - name: 📥 Checkout Code
@@ -19,22 +19,16 @@ jobs:
     - name: 🧰 Set up Terraform
       uses: hashicorp/setup-terraform@v3
 
-    - name: 🔐 Write GCP credentials
+    - name: 🔐 Write GCP Credentials file
       run: |
         echo '${{ secrets.GOOGLE_CREDENTIALS }}' > $HOME/gcp-creds.json
         echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-creds.json" >> $GITHUB_ENV
-
-    - name: 🔐 Write SSH private key for access
-      run: |
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > $HOME/id_rsa
-        chmod 600 $HOME/id_rsa
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" | ssh-keygen -y -f /dev/stdin > $HOME/id_rsa.pub
 
     - name: 🌱 Terraform Init
       run: terraform init
 
     - name: 📊 Terraform Plan
-      run: terraform plan -var="ssh_public_key=$(cat $HOME/id_rsa.pub)"
+      run: terraform plan
 
     - name: 🚀 Terraform Apply
-      run: terraform apply -auto-approve -var="ssh_public_key=$(cat $HOME/id_rsa.pub)"
+      run: terraform apply -auto-approve
