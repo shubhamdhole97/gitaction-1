@@ -1,15 +1,16 @@
-name: Terraform GCP VM Deploy
+name: Terraform + Ansible Docker Setup
 
 on:
   push:
     branches: [ "main" ]
 
 jobs:
-  terraform:
+  deploy:
     runs-on: ubuntu-latest
 
     defaults:
       run:
+        shell: bash
         working-directory: terraform
 
     steps:
@@ -19,7 +20,7 @@ jobs:
     - name: 🧰 Set up Terraform
       uses: hashicorp/setup-terraform@v3
 
-    - name: 🔐 Write GCP Credentials file
+    - name: 🔐 Write GCP Credentials
       run: |
         echo '${{ secrets.GOOGLE_CREDENTIALS }}' > $HOME/gcp-creds.json
         echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-creds.json" >> $GITHUB_ENV
@@ -28,8 +29,6 @@ jobs:
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PUBLIC_KEY }}" > ~/.ssh/id_rsa.pub
-        chmod 644 ~/.ssh/id_rsa.pub
-
         printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
 
@@ -41,3 +40,20 @@ jobs:
 
     - name: 🚀 Terraform Apply
       run: terraform apply -auto-approve -var="ssh_user=${{ secrets.SSH_USER }}" -var="ssh_pub_key=${{ secrets.SSH_PUBLIC_KEY }}"
+
+    - name: 🖥️ Get VM IP
+      id: ip
+      run: echo "VM_IP=$(terraform output -raw vm_ip)" >> $GITHUB_ENV
+
+    - name: 🧾 Write Ansible Inventory
+      run: |
+        mkdir -p ansible
+        echo "[all]" > ansible/inventory.ini
+        echo "vm ansible_host=$VM_IP ansible_user=${{ secrets.SSH_USER }} ansible_ssh_private_key_file=~/.ssh/id_rsa" >> ansible/inventory.ini
+
+    - name: 🐍 Install Ansible
+      run: sudo apt update && sudo apt install -y ansible
+
+    - name: 🐳 Run Ansible Playbook to Install Docker
+      run: |
+        ansible-playbook -i ansible/inventory.ini ../ansible/install-docker.yaml
