@@ -55,5 +55,7 @@ jobs:
       run: sudo apt update && sudo apt install -y ansible
 
     - name: 🐳 Run Ansible Playbook to Install Docker
-      run: |
-        ansible-playbook -i ansible/inventory.ini ../ansible/install-docker.yaml
+  env:
+    ANSIBLE_HOST_KEY_CHECKING: "False"
+  run: |
+    ansible-playbook -i ansible/inventory.ini ../ansible/install-docker.yaml
