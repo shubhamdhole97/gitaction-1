@@ -1,6 +1,21 @@
 variable "ssh_user" {}
 variable "ssh_pub_key" {}
 
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "google" {
+  project     = "crypto-lodge-466511-s8"
+  region      = "us-central1"
+  zone        = "us-central1-a"
+}
+
 resource "google_compute_instance" "vm_instance" {
   name         = "small-vm"
   machine_type = "e2-small"
@@ -33,8 +48,8 @@ resource "google_compute_firewall" "ssh" {
     ports    = ["22"]
   }
 
-  target_tags = ["ssh"]
   source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["ssh"]
 }
 
 output "vm_ip" {

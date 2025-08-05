@@ -24,13 +24,14 @@ jobs:
         echo '${{ secrets.GOOGLE_CREDENTIALS }}' > $HOME/gcp-creds.json
         echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-creds.json" >> $GITHUB_ENV
 
-    - name: 🔑 Set SSH variables
+    - name: 🔑 Write SSH Keys
       run: |
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > $HOME/id_rsa
-        chmod 600 $HOME/id_rsa
-        echo "${{ secrets.SSH_PUBLIC_KEY }}" > $HOME/id_rsa.pub
-        echo "SSH_USER=${{ secrets.SSH_USER }}" >> $GITHUB_ENV
-        echo "SSH_PUB_KEY=${{ secrets.SSH_PUBLIC_KEY }}" >> $GITHUB_ENV
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PUBLIC_KEY }}" > ~/.ssh/id_rsa.pub
+        chmod 644 ~/.ssh/id_rsa.pub
+
+        printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
 
     - name: 🌱 Terraform Init
       run: terraform init
