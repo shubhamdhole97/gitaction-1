@@ -7,7 +7,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     defaults:
       run:
         shell: bash
@@ -51,11 +50,15 @@ jobs:
         echo "[all]" > ansible/inventory.ini
         echo "vm ansible_host=$VM_IP ansible_user=${{ secrets.SSH_USER }} ansible_ssh_private_key_file=~/.ssh/id_rsa" >> ansible/inventory.ini
 
+    - name: 🔐 Add VM to known_hosts
+      run: |
+        ssh-keyscan -H $VM_IP >> ~/.ssh/known_hosts
+
     - name: 🐍 Install Ansible
       run: sudo apt update && sudo apt install -y ansible
 
     - name: 🐳 Run Ansible Playbook to Install Docker
-  env:
-    ANSIBLE_HOST_KEY_CHECKING: "False"
-  run: |
-    ansible-playbook -i ansible/inventory.ini ../ansible/install-docker.yaml
+      env:
+        ANSIBLE_HOST_KEY_CHECKING: "False"
+      run: |
+        ansible-playbook -i ansible/inventory.ini ansible/install-docker.yaml
