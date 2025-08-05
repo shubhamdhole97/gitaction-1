@@ -8,53 +8,52 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    env:
-      ANSIBLE_HOST_KEY_CHECKING: False
+    defaults:
+      run:
+        shell: bash
+        working-directory: terraform
 
     steps:
-      - name: 📥 Checkout Code
-        uses: actions/checkout@v3
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v3
 
-      - name: 🗝️ Write SSH Private Key to File
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > $HOME/id_rsa
-          chmod 600 $HOME/id_rsa
+    - name: 🧰 Set up Terraform
+      uses: hashicorp/setup-terraform@v3
 
-      - name: 🔑 Write SSH Public Key to File
-        run: |
-          echo "${{ secrets.SSH_PUBLIC_KEY }}" > $HOME/id_rsa.pub
-          chmod 644 $HOME/id_rsa.pub
+    - name: 🔐 Write GCP Credentials
+      run: |
+        echo '${{ secrets.GOOGLE_CREDENTIALS }}' > $HOME/gcp-creds.json
+        echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-creds.json" >> $GITHUB_ENV
 
-      - name: ☁️ Write GCP Credentials to File
-        run: |
-          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > $HOME/credentials.json
+    - name: 🔑 Write SSH Keys
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PUBLIC_KEY }}" > ~/.ssh/id_rsa.pub
+        printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
 
-      - name: 📦 Set up Terraform
-        uses: hashicorp/setup-terraform@v3
+    - name: 🌱 Terraform Init
+      run: terraform init
 
-      - name: 🌍 Terraform Init
-        working-directory: terraform
-        run: terraform init
+    - name: 📊 Terraform Plan
+      run: terraform plan -var="ssh_user=${{ secrets.SSH_USER }}" -var="ssh_pub_key=${{ secrets.SSH_PUBLIC_KEY }}"
 
-      - name: 🚀 Terraform Apply
-        working-directory: terraform
-        run: |
-          terraform apply -auto-approve \
-            -var="gcp_credentials_file=$HOME/credentials.json" \
-            -var="ssh_pub_key_path=$HOME/id_rsa.pub" \
-            -var="ssh_user=ubuntu"
+    - name: 🚀 Terraform Apply
+      run: terraform apply -auto-approve -var="ssh_user=${{ secrets.SSH_USER }}" -var="ssh_pub_key=${{ secrets.SSH_PUBLIC_KEY }}"
 
-      - name: 📡 Get VM IP
-        id: get_ip
-        working-directory: terraform
-        run: |
-          echo "VM_IP=$(terraform output -raw vm_ip)" >> $GITHUB_ENV
+    - name: 🖥️ Get VM IP
+      id: ip
+      run: echo "VM_IP=$(terraform output -raw vm_ip)" >> $GITHUB_ENV
 
-      - name: 🧾 Create Inventory File
-        run: |
-          echo "[vm]" > ansible/inventory.ini
-          echo "$VM_IP ansible_user=ubuntu ansible_ssh_private_key_file=$HOME/id_rsa" >> ansible/inventory.ini
+    - name: 🧾 Write Ansible Inventory
+      run: |
+        mkdir -p ansible
+        echo "[all]" > ansible/inventory.ini
+        echo "vm ansible_host=$VM_IP ansible_user=${{ secrets.SSH_USER }} ansible_ssh_private_key_file=~/.ssh/id_rsa" >> ansible/inventory.ini
 
-      - name: 🐳 Install Docker with Ansible
-        run: |
-          ansible-playbook -i ansible/inventory.ini ansible/install-docker.yaml
+    - name: 🐍 Install Ansible
+      run: sudo apt update && sudo apt install -y ansible
+
+    - name: 🐳 Run Ansible Playbook to Install Docker
+      run: |
+        ansible-playbook -i ansible/inventory.ini ../ansible/install-docker.yaml
