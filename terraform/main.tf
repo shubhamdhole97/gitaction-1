@@ -1,6 +1,22 @@
-resource "google_compute_instance" "ubuntu_vm" {
-  name         = "ubuntu-instance"
-  machine_type = "e2-medium"
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "google" {
+  credentials = file("gcp-creds.json")
+  project     = var.project_id
+  region      = var.region
+  zone        = var.zone
+}
+
+resource "google_compute_instance" "vm_instance" {
+  name         = "small-vm"
+  machine_type = "e2-small"
   zone         = var.zone
 
   boot_disk {
@@ -10,17 +26,9 @@ resource "google_compute_instance" "ubuntu_vm" {
   }
 
   network_interface {
-    network       = "default"
+    network = "default"
     access_config {}
   }
 
-  tags = ["ssh"]
-
-  metadata = {
-    ssh-keys = "${var.ssh_user}:${var.ssh_pub_key}"
-  }
-}
-
-output "vm_ip" {
-  value = google_compute_instance.ubuntu_vm.network_interface[0].access_config[0].nat_ip
+  tags = ["http-server", "https-server"]
 }
