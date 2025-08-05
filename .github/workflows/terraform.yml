@@ -2,12 +2,10 @@ name: Terraform GCP VM Deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
   terraform:
-    name: Deploy VM to GCP
     runs-on: ubuntu-latest
 
     defaults:
@@ -15,15 +13,16 @@ jobs:
         working-directory: terraform
 
     steps:
-    - name: 📥 Checkout code
+    - name: 📥 Checkout Code
       uses: actions/checkout@v3
 
     - name: 🧰 Set up Terraform
       uses: hashicorp/setup-terraform@v3
 
-    - name: 🧾 Write GCP credentials to file
+    - name: 🗝️ Authenticate with GCP
       run: |
-        echo "${{ secrets.GOOGLE_CREDENTIALS }}" > gcp-creds.json
+        echo "${{ secrets.GOOGLE_CREDENTIALS }}" > $HOME/gcp-creds.json
+        echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-creds.json" >> $GITHUB_ENV
 
     - name: 🌱 Terraform Init
       run: terraform init
