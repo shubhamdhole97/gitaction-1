@@ -21,6 +21,10 @@ resource "google_compute_instance" "vm_instance" {
   machine_type = "e2-small"
   zone         = "us-central1-a"
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   boot_disk {
     initialize_params {
       image = "ubuntu-os-cloud/ubuntu-2204-lts"
@@ -37,19 +41,6 @@ resource "google_compute_instance" "vm_instance" {
   }
 
   tags = ["http-server", "https-server", "ssh"]
-}
-
-resource "google_compute_firewall" "ssh" {
-  name    = "allow-ssh"
-  network = "default"
-
-  allow {
-    protocol = "tcp"
-    ports    = ["22"]
-  }
-
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["ssh"]
 }
 
 output "vm_ip" {
